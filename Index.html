@@ -1,0 +1,210 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080d18">
+<title>AI Trader</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080d18;color:#eef3ff;font-family:Arial,sans-serif;padding:20px}
+header{display:flex;justify-content:space-between;align-items:center}
+h1{font-size:25px;margin:10px 0}
+.green{color:#36d69a}
+.muted{color:#8995aa}
+.card{background:#121c2d;border:1px solid #26354b;border-radius:15px;padding:17px;margin:17px 0}
+.balance{font-size:34px;font-weight:bold;margin:12px 0}
+button{background:#2878ef;color:white;border:0;padding:12px 17px;border-radius:9px;font-weight:bold}
+input{background:#080d18;color:white;border:1px solid #34435b;padding:12px;border-radius:8px;width:100%;margin:8px 0}
+.stock{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #29364a}
+.stock:last-child{border:0}
+.stock small{display:block;color:#8995aa;margin-top:5px}
+h2{font-size:18px}
+.actions{display:flex;gap:8px}
+.actions button{flex:1}
+.red{color:#ff7272}
+footer{text-align:center;color:#78859a;font-size:12px;padding:20px}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🤖 AI TRADER</h1>
+<span class="green">● PAPER MODE</span>
+</header>
+
+<p class="muted">Your personal simulated trading dashboard</p>
+
+<div class="card">
+<p class="muted">Available cash</p>
+<div class="balance" id="cash">$100,000.00</div>
+<p class="muted">Portfolio value: <b id="total">$100,000.00</b></p>
+<p>Profit / Loss: <b id="profit" class="green">$0.00</b></p>
+</div>
+
+<div class="card">
+<h2>📊 Market Watch</h2>
+<div id="stocks"></div>
+<p class="muted">Illustrative prices only — not live market data.</p>
+</div>
+
+<div class="card">
+<h2>💹 Paper Trade</h2>
+<label>Stock symbol</label>
+<input id="symbol" placeholder="Example: AAPL">
+<label>Number of shares</label>
+<input id="quantity" type="number" min="1" value="1">
+<div class="actions">
+<button onclick="trade('buy')">BUY</button>
+<button onclick="trade('sell')" style="background:#b83e4d">SELL</button>
+</div>
+<p id="message" class="muted">Select a stock to begin.</p>
+</div>
+
+<div class="card">
+<h2>💼 Your Holdings</h2>
+<div id="holdings">No stocks purchased yet.</div>
+</div>
+
+<div class="card">
+<h2>🧠 AI Market Desk</h2>
+<p id="insight">Your trading assistant is ready.</p>
+<button onclick="analyze()">Analyze Portfolio</button>
+<p class="muted">Basic automated insights using simulated data. No external AI connection yet.</p>
+</div>
+
+<button onclick="resetAccount()" style="background:#35445b;width:100%">Reset Paper Account</button>
+
+<footer>
+AI TRADER V1.0<br>
+SIMULATED TRADING ONLY · NO REAL MONEY
+</footer>
+
+<script>
+const startingCash=100000;
+
+const prices={
+AAPL:225,
+TSLA:350,
+NVDA:145,
+MSFT:480,
+AMZN:220,
+GOOGL:175,
+META:600
+};
+
+let cash=Number(localStorage.cash ?? startingCash);
+let holdings=JSON.parse(localStorage.holdings || "{}");
+
+function money(n){
+return "$"+n.toLocaleString("en-US",{
+minimumFractionDigits:2,maximumFractionDigits:2
+});
+}
+
+function save(){
+localStorage.cash=cash;
+localStorage.holdings=JSON.stringify(holdings);
+}
+
+function render(){
+let stocks=document.getElementById("stocks");
+stocks.innerHTML="";
+Object.keys(prices).forEach(s=>{
+stocks.innerHTML+=`
+<div class="stock">
+<div><b>${s}</b><small>Simulated stock</small></div>
+<div><b>${money(prices[s])}</b></div>
+</div>`;
+});
+
+let value=0, invested=0;
+let html="";
+
+Object.keys(holdings).forEach(s=>{
+let h=holdings[s];
+value+=h.qty*prices[s];
+invested+=h.qty*h.avg;
+html+=`<div class="stock">
+<div><b>${s}</b><small>${h.qty} shares</small></div>
+<div>${money(h.qty*prices[s])}<small>${money((prices[s]-h.avg)*h.qty)} P/L</small></div>
+</div>`;
+});
+
+document.getElementById("cash").textContent=money(cash);
+document.getElementById("total").textContent=money(cash+value);
+let profit=cash+value-startingCash;
+let p=document.getElementById("profit");
+p.textContent=money(profit);
+p.className=profit>=0?"green":"red";
+document.getElementById("holdings").innerHTML=
+html||"No stocks purchased yet.";
+}
+
+function trade(side){
+let s=document.getElementById("symbol").value.toUpperCase().trim();
+let qty=Number(document.getElementById("quantity").value);
+let msg=document.getElementById("message");
+
+if(!prices[s]||!Number.isInteger(qty)||qty<1){
+msg.textContent="Enter a valid stock symbol and share quantity.";
+return;
+}
+
+let price=prices[s];
+if(side==="buy"){
+let cost=price*qty;
+if(cost>cash){
+msg.textContent="Not enough paper trading cash.";
+return;
+}
+let old=holdings[s]||{qty:0,avg:0};
+old.avg=(old.avg*old.qty+cost)/(old.qty+qty);
+old.qty+=qty;
+holdings[s]=old;
+cash-=cost;
+}else{
+if(!holdings[s]||holdings[s].qty<qty){
+msg.textContent="You don't own enough shares.";
+return;
+}
+holdings[s].qty-=qty;
+cash+=price*qty;
+if(holdings[s].qty===0)delete holdings[s];
+}
+save();
+render();
+msg.textContent="Paper "+side+" completed: "+qty+" "+s;
+}
+
+function analyze(){
+let count=Object.keys(holdings).length;
+let value=0;
+Object.keys(holdings).forEach(s=>{
+value+=holdings[s].qty*prices[s];
+});
+document.getElementById("insight").textContent=
+count===0
+?"You have no open positions. Research companies and consider your risk before making a paper trade."
+:"You currently hold "+count+" different stocks worth "+money(value)+". Review your position sizes and avoid putting too much of your portfolio into one company.";
+}
+
+function resetAccount(){
+if(confirm("Reset your paper account to $100,000?")){
+cash=startingCash;
+holdings={};
+save();
+render();
+document.getElementById("message").textContent="Account reset.";
+}
+}
+
+document.getElementById("symbol").addEventListener("change",e=>{
+e.target.value=e.target.value.toUpperCase();
+});
+
+render();
+</script>
+</body>
+</html>
