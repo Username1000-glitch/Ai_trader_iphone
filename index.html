@@ -242,6 +242,54 @@ document.getElementById("reset").addEventListener("click",()=>{
  }
 });
 
+// AI TRADER V3 - PAPER MARKET SCANNER
+
+const scanner = document.createElement("div");
+scanner.className = "card";
+scanner.innerHTML = `
+<h2>🤖 AI Market Scanner</h2>
+<p class="pill">● PAPER SCANNER ACTIVE</p>
+<p class="muted">Demo signals only — not live AI predictions.</p>
+<div id="scanResults"></div>
+<button id="scanNow" style="width:100%;margin-top:15px">
+SCAN STOCKS NOW
+</button>
+<p class="notice" id="scanTime"></p>
+`;
+
+document.body.insertBefore(
+ scanner,
+ document.querySelector("footer")
+);
+
+function runScan(){
+ const results = document.getElementById("scanResults");
+
+ results.innerHTML = Object.keys(prices).map(s => `
+ <div class="stock">
+ <div>
+ <b>${s}</b>
+ <small>${names[s]} · Demo signal</small>
+ </div>
+ <div style="text-align:right">
+ <b class="muted">HOLD</b>
+ <small>${money(prices[s])}</small>
+ </div>
+ </div>
+ `).join("");
+
+ document.getElementById("scanTime").textContent =
+ "Last demo scan: " + new Date().toLocaleTimeString();
+}
+
+document.getElementById("scanNow")
+.addEventListener("click",runScan);
+
+runScan();
+
+// Refresh demo scan every 5 minutes while open
+setInterval(runScan,300000);
+
 render();
 </script>
 </body>
